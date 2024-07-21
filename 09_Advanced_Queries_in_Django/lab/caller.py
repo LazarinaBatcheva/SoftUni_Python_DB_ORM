@@ -59,7 +59,7 @@ def filter_products() -> str:
 def give_discount() -> str:
     # gets and updates price of available products with price > 3.00
     Product.objects.available_products().filter(price__gt=3.00).update(price=F("price") * 0.7)
-    # ordering updated prices
+    # arrangement of products with updated prices
     products_for_discount = Product.objects.available_products().order_by("-price", "name")
 
     available_products_info = []
