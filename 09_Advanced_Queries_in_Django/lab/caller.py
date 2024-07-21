@@ -61,10 +61,10 @@ def give_discount() -> str:
     Product.objects.available_products().filter(price__gt=3.00).update(price=F("price") * 0.7)
     
     # arrangement of products with updated prices
-    products_for_discount = Product.objects.available_products().order_by("-price", "name")
+    discounted_products = Product.objects.available_products().order_by("-price", "name")
 
     available_products_info = []
-    for p in products_for_discount:
+    for p in discounted_products:
         available_products_info.append(f"{p.name}: {p.price}lv.")
 
     return "\n".join(available_products_info)
