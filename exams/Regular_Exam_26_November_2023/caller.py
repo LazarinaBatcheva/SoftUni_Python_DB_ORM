@@ -13,15 +13,11 @@ def get_authors(search_name=None, search_email=None) -> str:
     if search_name is None and search_email is None:
         return ''
 
-    query_name = Q(full_name__icontains=search_name)
-    query_email = Q(email__icontains=search_email)
-
-    if search_name is not None and search_email is not None:
-        query = Q(query_name & query_email)
-    elif search_name is not None:
-        query = query_name
-    else:
-        query = query_email
+    query = Q()
+    if search_name:
+        query &= Q(full_name__icontains=search_name)
+    if search_email:
+        query &= Q(email__icontains=search_email)
 
     authors = Author.objects.filter(query).order_by('-full_name')
 
@@ -65,8 +61,10 @@ def get_top_reviewer() -> str:
 
 def get_latest_article() -> str:
     last_article = Article.objects\
-        .prefetch_related('authors')\
-        .prefetch_related('article_reviews')\
+        .prefetch_related(
+            'authors',
+            'article_reviews'
+        )\
         .annotate(
             reviews_count=Count('article_reviews'),
             avg_reviews_rating=Avg('article_reviews__rating')
@@ -81,12 +79,11 @@ def get_latest_article() -> str:
         last_article.authors.order_by('full_name').values_list('full_name', flat=True)
     )
 
-    if last_article.avg_reviews_rating is None:
-        last_article.avg_reviews_rating = 0
+    avg_ratting = last_article.avg_reviews_rating or 0.0
 
     return (f'The latest article is: {last_article.title}. Authors: {authors}. '
             f'Reviewed: {last_article.reviews_count} times. '
-            f'Average Rating: {last_article.avg_reviews_rating:.2f}.')
+            f'Average Rating: {avg_rating:.2f}.')
 
 
 def get_top_rated_article() -> str:
@@ -106,11 +103,10 @@ def get_top_rated_article() -> str:
     if top_rated_article is None:
         return ''
 
-    if top_rated_article.avg_reviews_rating is None:
-        top_rated_article.avg_reviews_rating = 0
+    avg_rating = top_rated_article.avg_reviews_rating or 0.0
 
     return (f'The top-rated article is: {top_rated_article.title}, '
-            f'with an average rating of {top_rated_article.avg_reviews_rating:.2f}, '
+            f'with an average rating of {avg_rating:.2f}, '
             f'reviewed {top_rated_article.reviews_count} times.')
 
 
@@ -118,9 +114,9 @@ def ban_author(email=None) -> str:
     if email is None:
         return 'No authors banned.'
 
-    try:
-        author_to_ban = Author.objects.get(email=email)
-    except Author.DoesNotExist:
+    author_to_ban = Author.objects.filter(email=email).first()
+
+    if not author_to_ban:
         return 'No authors banned.'
 
     author_to_ban.is_banned = True
