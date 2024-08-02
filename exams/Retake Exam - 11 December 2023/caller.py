@@ -93,10 +93,13 @@ def get_latest_match_info() -> str:
     latest_match = Match.objects\
         .select_related('tournament', 'winner')\
         .prefetch_related('players')\
-        .order_by('-date_played')\
+        .order_by(
+            '-date_played',
+            '-id'
+        )\
         .first()
 
-    if not latest_match:
+    if latest_match is None:
         return ''
 
     players_names = ' vs '.join(latest_match.players.order_by('full_name').values_list('full_name', flat=True))
@@ -115,14 +118,14 @@ def get_matches_by_tournament(tournament_name=None) -> str:
 
     matches = Match.objects\
         .select_related('tournament', 'winner')\
-        .filter(tournament__name__exact=tournament_name,)\
+        .filter(tournament__name__exact=tournament_name)\
         .order_by('-date_played')
 
     if not matches.exists():
         return 'No matches found.'
 
     matches_info = '\n'.join(
-        f'Match played on: {m.date_played}, score: {m.score}, winner: {m.winner.full_name if m.winner else 'TBA'}'
+        f'Match played on: {m.date_played}, score: {m.score}, winner: {m.winner.full_name if m.winner else "TBA"}'
         for m in matches
     )
 
